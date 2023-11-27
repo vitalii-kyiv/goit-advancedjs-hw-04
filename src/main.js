@@ -1,28 +1,24 @@
 import axios from 'axios';
 
 const form = document.querySelector('.search-form');
+const loadMoreBtn = document.querySelector('.load-more');
 const searchResultGallery = document.querySelector('.gallery');
-
-function serviceSearch(searchText) {
+let page = 1;
+function serviceSearch(searchText, page = 1) {
   const params = new URLSearchParams({
     key: '37994120-fff0e4792a0f4f4675b43ad43',
     q: searchText,
     image_type: 'photo',
     orientation: 'horizontal',
     safesearch: 'true',
+    per_page: 5,
+    page,
   });
   return axios(`https://pixabay.com/api/?${params}`);
 }
 
-serviceSearch('dog')
-  .then(response => {
-    console.log(response.data);
-  })
-  .catch(error => {
-    console.error('Error fetching data:', error);
-  });
-
 form.addEventListener('submit', onSubmitClick);
+loadMoreBtn.addEventListener('click', onLoadMoreBtnClick);
 
 function onSubmitClick(evt) {
   evt.preventDefault();
@@ -73,3 +69,29 @@ function renderSearchResult(data) {
     )
     .join('');
 }
+
+function onLoadMoreBtnClick() {
+  const searchData = form.elements['searchQuery'].value;
+  serviceSearch(searchData, page + 1).then(response => {
+    const data = response.data.hits;
+    if (!data.length) {
+      console.log('No more images to load.');
+      return;
+    }
+    searchResultGallery.insertAdjacentHTML(
+      'beforeend',
+      renderSearchResult(data)
+    );
+  });
+}
+
+// function handlerLoadMore() {
+//   page += 1;
+//   serviceMovie(page).then((data) => {
+//     elements.list.insertAdjacentHTML("beforeend", createMarkup(data.results));
+
+//     if (data.page >= 500 || data.page >= data.total_pages) {
+//       elements.btnLoad.classList.replace("load-more", "load-more-hidden");
+//     }
+//   });
+// }
