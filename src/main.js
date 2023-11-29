@@ -1,39 +1,83 @@
-import axios from 'axios';
+import SimpleLightbox from 'simplelightbox';
+import 'simplelightbox/dist/simple-lightbox.min.css';
+import iziToast from 'izitoast';
+import 'izitoast/dist/css/iziToast.min.css';
+import { serviceSearch } from './search-api';
 
 const form = document.querySelector('.search-form');
 const loadMoreBtn = document.querySelector('.load-more');
 const searchResultGallery = document.querySelector('.gallery');
-let page = 1;
-function serviceSearch(searchText, page = 1) {
-  const params = new URLSearchParams({
-    key: '37994120-fff0e4792a0f4f4675b43ad43',
-    q: searchText,
-    image_type: 'photo',
-    orientation: 'horizontal',
-    safesearch: 'true',
-    per_page: 5,
-    page,
-  });
-  return axios(`https://pixabay.com/api/?${params}`);
-}
 
 form.addEventListener('submit', onSubmitClick);
 loadMoreBtn.addEventListener('click', onLoadMoreBtnClick);
 
-function onSubmitClick(evt) {
+async function onSubmitClick(evt) {
   evt.preventDefault();
   const searchData = form.elements['searchQuery'].value;
   console.log(searchData);
-  serviceSearch(searchData).then(response => {
-    const data = response.data.hits;
+  try {
+    const response = await serviceSearch(searchData);
+    loadMoreBtn.style.display = 'block';
+    const data = response.hits;
+    console.log(response);
     console.log(data);
     if (!data.length) {
-      console.log(
-        'Sorry, there are no images matching your search query. Please try again.'
-      );
+      loadMoreBtn.style.display = 'none';
+      iziToast.error({
+        closeOnEscape: true,
+        closeOnClick: true,
+        backgroundColor: 'tomato',
+        messageColor: 'white',
+        position: 'topRight',
+        messageSize: '16',
+        maxWidth: 500,
+        message: `Sorry, there are no images matching your search query. Please try again.`,
+      });
+      searchResultGallery.innerHTML = '';
+    } else {
+      searchResultGallery.innerHTML = renderSearchResult(data);
+      iziToast.success({
+        closeOnEscape: true,
+        closeOnClick: true,
+        messageSize: '16',
+        maxWidth: 500,
+        position: 'topRight',
+        message: `Hooray! We found ${response.total} images.`,
+      });
     }
-    searchResultGallery.innerHTML = renderSearchResult(data);
-  });
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+let page = 1;
+
+async function onLoadMoreBtnClick() {
+  const searchData = form.elements['searchQuery'].value;
+  try {
+    const response = await serviceSearch(searchData, page + 1);
+    const data = response.hits;
+    if (!data.length) {
+      iziToast.error({
+        closeOnEscape: true,
+        closeOnClick: true,
+        backgroundColor: 'tomato',
+        messageColor: 'white',
+        position: 'topRight',
+        messageSize: '16',
+        maxWidth: 500,
+        message: `We're sorry, but you've reached the end of search results.`,
+      });
+      loadMoreBtn.style.display = 'none';
+      return;
+    }
+    searchResultGallery.insertAdjacentHTML(
+      'beforeend',
+      renderSearchResult(data)
+    );
+  } catch (error) {
+    console.error('Error:', error);
+  }
 }
 
 function renderSearchResult(data) {
@@ -49,7 +93,9 @@ function renderSearchResult(data) {
         downloads,
       }) => `
         <div class="photo-card">
+        <a href="${largeImageURL}">
           <img src="${webformatURL}" alt="${tags}" loading="lazy" />
+          </a>
           <div class="info">
             <p class="info-item">
               <b>Likes ${likes}</b>
@@ -70,28 +116,4 @@ function renderSearchResult(data) {
     .join('');
 }
 
-function onLoadMoreBtnClick() {
-  const searchData = form.elements['searchQuery'].value;
-  serviceSearch(searchData, page + 1).then(response => {
-    const data = response.data.hits;
-    if (!data.length) {
-      console.log('No more images to load.');
-      return;
-    }
-    searchResultGallery.insertAdjacentHTML(
-      'beforeend',
-      renderSearchResult(data)
-    );
-  });
-}
-
-// function handlerLoadMore() {
-//   page += 1;
-//   serviceMovie(page).then((data) => {
-//     elements.list.insertAdjacentHTML("beforeend", createMarkup(data.results));
-
-//     if (data.page >= 500 || data.page >= data.total_pages) {
-//       elements.btnLoad.classList.replace("load-more", "load-more-hidden");
-//     }
-//   });
-// }
+const lightbox = new SimpleLightbox('.gallery a', {});
