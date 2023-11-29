@@ -14,13 +14,12 @@ loadMoreBtn.addEventListener('click', onLoadMoreBtnClick);
 async function onSubmitClick(evt) {
   evt.preventDefault();
   const searchData = form.elements['searchQuery'].value;
-  console.log(searchData);
+
   try {
     const response = await serviceSearch(searchData);
     loadMoreBtn.style.display = 'block';
     const data = response.hits;
-    console.log(response);
-    console.log(data);
+
     if (!data.length) {
       loadMoreBtn.style.display = 'none';
       iziToast.error({
@@ -116,4 +115,5 @@ function renderSearchResult(data) {
     .join('');
 }
 
+// SimpleLightbox не працює, є помилка при імпорті. Нажаль виправити не вийшло, розумію, що не обовязковий функціонал, але якщо зможеш дати фідбек - буду дуже вдячний.
 const lightbox = new SimpleLightbox('.gallery a', {});
