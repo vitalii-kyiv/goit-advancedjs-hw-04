@@ -70,3 +70,7 @@ body {
   color: blue;
   font-weight: 300;
 }
+
+.no-click {
+  pointer-events: none;
+}
